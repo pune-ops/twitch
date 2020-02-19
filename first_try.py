@@ -12,12 +12,13 @@ def call_process(command):
         print(command)
         proc= subprocess.Popen(command,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate()
+        print(stdout,stderr)
         ret = proc.returncode
+        print(ret)
         return ret
     except Exception as e:
         print(e)
-    finally:
-        sys.exit(ret)
+
 
 def send_mail(send_from, send_to, subject, text, server="localhost"):
     msg = MIMEMultipart()
@@ -73,8 +74,12 @@ if __name__ == '__main__':
     parser.add_argument('--prefix', required=True, help='Start date')
     parser.add_argument('--mail', required=True, help='receivers', nargs='+', default=None)
 
+    global logger
+    logger = logging.getLogger(__name__)
+
     try:
         args = parser.parse_args()
         main()
     except Exception as e:
         print(e)
+
