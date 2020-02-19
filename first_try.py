@@ -9,12 +9,11 @@ from email.mime.multipart import MIMEMultipart
 
 def call_process(command):
     try:
-        print(command)
         proc= subprocess.Popen(command,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate()
-        print(stdout,stderr)
+        logger.error(stdout,stderr)
         ret = proc.returncode
-        print(ret)
+        print("Exit code of subprocess" + ret)
         return ret
     except Exception as e:
         print(e)
@@ -42,17 +41,17 @@ def check_s3_files():
 
 def main():
     try:
-        print("Checking the twitch data for ")
+        logger.info("Checking the twitch data for ")
         success = 1
         time_out = time.time() + 300 # no for 2 days 172800 time in seconds
         while True:
             if success == 0:
-                print("All the files are available for time period")
+                logger.info("All the files are available for time period")
                 break
             elif time.time() > time_out:
                 break
             success = check_s3_files()
-            print("Sleeping for the 3 Hours")
+            logger.info("Sleeping for the 3 Hours")
             time.sleep(50) # 10800 sleep time for 3 hours
         if success !=0:
             send_mail('gswami@comscore.com',
@@ -73,13 +72,24 @@ if __name__ == '__main__':
     parser.add_argument('--time_period', required=True, help='Status to check')
     parser.add_argument('--prefix', required=True, help='Start date')
     parser.add_argument('--mail', required=True, help='receivers', nargs='+', default=None)
+    parser.add_argument('--log_level', help='Logging level.', required=False, default="INFO")
 
-    global logger
-    logger = logging.getLogger(__name__)
 
     try:
         args = parser.parse_args()
-        main()
     except Exception as e:
         print(e)
 
+
+    logging.basicConfig(
+        stream=sys.stdout,
+        format="%(levelname) -5s %(asctime)s %(module)s:%(lineno)s - %(message)s",
+        level=logging.getLevelName(args.log_level),
+    )
+    global logger
+    logger = logging.getLogger(__name__)
+
+    for handler in logging.root.handlers:
+        handler.addFilter(logging.Filter('__main__'))
+
+    main()
