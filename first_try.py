@@ -12,11 +12,12 @@ def call_process(command):
         print(command)
         proc= subprocess.Popen(command,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate()
-        return proc.returncode
+        ret = proc.returncode
+        return ret
     except Exception as e:
-        logging.error(e)
+        print(e)
     finally:
-        sys.exit(0)
+        sys.exit(ret)
 
 def send_mail(send_from, send_to, subject, text, server="localhost"):
     msg = MIMEMultipart()
@@ -31,11 +32,11 @@ def send_mail(send_from, send_to, subject, text, server="localhost"):
 def check_s3_files():
     project = 'twitch'
     timeperiod = args.time_period  # format 20200218_01
-    s3bucket = 'comscore - endpoint - production'
+    s3bucket = 'comscore-endpoint-production'
     s3prefix = args.prefix  # format 2020 / 02 / 18 / 01
-    minCount = 800
-    print("Checking the twitch data for ")
-    command = ["\\\\csiadtpl02\\c$\\cs_bin\\TwitchCustomScanner\\TwitchCustomScanner.exe", "--project"+" "+project +" "+"--timeperiod"+" "+timeperiod+" "+"--s3bucket"+" "+s3bucket+" "+"--s3prefix"+" "+s3prefix+" "+"--minCount"+" "+minCount]
+    minCount = '800'
+    print("Checking the twitch data for {0} ".format(args.time_period))
+    command = "\\\\csiadtpl02\\C$\\cs_bin\\TwitchCustomScanner\\TwitchCustomScanner.exe"+" "+"--project"+" "+project +" "+"--timeperiod"+" "+timeperiod+" "+"--s3bucket"+" "+s3bucket+" "+"--s3prefix"+" "+s3prefix+" "+"--minCount"+" "+minCount
     return call_process(command)
 
 def main():
@@ -51,8 +52,8 @@ def main():
                 break
             success = check_s3_files()
             print("Sleeping for the 3 Hours")
-            time.sleep(10800)
-        if success ==1:
+            time.sleep(50) # 10800 sleep time for 3 hours
+        if success !=0:
             send_mail('gswami@comscore.com',
                       'gswami@comscore.com',
                       'Twitch data is missing for {0}'.format(args.time_period),
@@ -74,5 +75,6 @@ if __name__ == '__main__':
 
     try:
         args = parser.parse_args()
+        main()
     except Exception as e:
         print(e)
